@@ -25,7 +25,7 @@
 
 * `example/` 目录下提供了三个样例 AI 程序，它们分别是：仅使用 `Controller` 的简易 AI 、使用 `Simulator` 辅助决策的进阶 AI 和使用 `template.hpp` 中模板的 AI，我们之后会进行详细介绍。
 
-  
+
 
 ## 2. 开始！
 
@@ -37,7 +37,7 @@
     #include "control.hpp"
     ```
 
-    
+
 
 2. 然后创建一个全局的 `Controller` 对象，它是你的 AI 实现游戏交互流程的控制器。 `Controller` 的构造函数中会直接调用游戏初始化信息的读取方法，包括你的选手id（先后手信息）和生成初始信息素的随机数种子。
 
@@ -45,7 +45,7 @@
     Controller c;
     ```
 
-    
+
 
 3. 再写一个main函数，根据游戏规则，先手和后手有不同的游戏流程，于是我们分成两个函数分别处理。
 
@@ -59,7 +59,7 @@
     }
     ```
 
-    
+
 
 4. 简易的先手的游戏流程如下：
 
@@ -73,7 +73,7 @@
             c.append_self_operation(BuildTower, 5, 9);
             c.append_self_operation(BuildTower, 5, 3);
             c.append_self_operation(BuildTower, 5, 15);
-    
+
             c.send_self_operations(); // Send your operations to judger
             c.apply_self_operations(); // Apply your operations to game state
             c.read_opponent_operations(); // Read opponent operations from judger
@@ -83,31 +83,31 @@
     }
     ```
     每回合中，先手__应当按照如下顺序__进行相关函数的调用（若不遵循该顺序可能导致游戏状态的错误维护）：
-    
+
     1. 确定己方的操作。调用 `append_self_operation()` 以将想执行的操作添加到己方操作列表 `self_operations`。
-    
+
     2. 将己方的操作发送给 Judger。调用 `send_self_operations()` 将己方操作列表中的所有操作发送给 Judger。
-    
+
     3. 将己方的操作应用到局面。调用 `apply_self_operations()` 将己方操作列表中的所有操作应用到当前局面，包括：防御塔的建造、升级、拆除，基地的升级，超级武器的使用（各类超级武器会在该函数调用时立即生效）。
-    
+
     4. 读取对方的操作。调用 `read_opponent_operations()` 以读取对方的操作并添加到对方操作列表 `opponent_operations`。
-    
+
     5. 将对方的操作应用到局面。调用 `apply_opponent_operations()` 将操作列表中的所有操作应用到当前局面，包括：防御塔的建造、升级、拆除，基地的升级，超级武器的使用（各类超级武器会在该函数调用时立即生效）。
-    
+
     6. 读取局面信息。此时游戏逻辑已经完成了本回合的结算，并返回结算后的局面信息。调用 `read_round_info` 以读取局面信息，包括：回合数、防御塔、工蚁、金币、基地血量。
-    
-       
-    
+
+
+
     你可能已经注意到了，我们每回合都添加了3个建塔操作，如果这些操作在一回合内全部执行显然是非法的，那么为什么可以这样写呢？其实这里利用了 SDK 在 `append_self_operation()` 实现中的相关特性。在每次调用 `append_self_operation()` 时，`Controller` 都会检查该操作的合法性来决定是否添加至己方操作列表，并返回一个 `bool` 值来表示是否成功添加。
-    
+
     这里进行的检查有：（1）操作本身的合法性：操作类型是否合法、位置是否合法、操作对象是否符合要求等；（2）操作列表的合法性：是否对多个防御塔操作、是否对大本营多次操作、是否有足够的金币执行列表中的所有操作等。
-    
+
     你可以利用这种机制进行某种意义上的“计划”操作，即可以一直给SDK一系列操作，然后让SDK自己决定应用和发送的时机。
-    
+
     ⚠️ __*但是，这种设计有潜在的隐藏选手自身程序问题的风险，因此我们非常建议不要在复杂的逻辑之中应用这种操作。*__
-    
-    
-    
+
+
+
 5. 类似地，我们给出后手的游戏流程，相信你已经能看懂了~我们就不再过多解释了。
 
     ```cpp
@@ -118,12 +118,12 @@
         {
             c.read_opponent_operations(); // Read opponent operations from judger
             c.apply_opponent_operations(); // Apply opponent operations to game state
-    
+
             // Add your operations here
             c.append_self_operation(BuildTower, 13, 9);
             c.append_self_operation(BuildTower, 13, 3);
             c.append_self_operation(BuildTower, 13, 15);
-    
+
             c.send_self_operations(); // Send your operations to judger
             c.apply_self_operations(); // Apply your operations to game state
             c.read_round_info(); // Read round data from judger
@@ -143,7 +143,7 @@
    #include "simulate.hpp"
    ```
 
-   
+
 
 2. 如果你看到了 `Simulator` 的构造函数，你会发现它需要接受一个 `Controller` 实例，那应该在什么地方构造`Simulate` 实例呢？基本的规则是：**在你需要添加操作之前构造**。这回我们以后手为例进行讲解：
 
@@ -155,7 +155,7 @@
        {
            c.read_opponent_operations(); // Read opponent operations from judger
            c.apply_opponent_operations(); // Apply opponent operations to game state
-   
+
            // Create a simulator
            Simulator s(c);
            // Simulate 10 rounds
@@ -163,7 +163,7 @@
            {
                Operation build_tower0(OperationType::BuildTower, 5, 9);
                Operation build_tower1(OperationType::BuildTower, 13, 9);
-   
+
                // Add player1's operation
                s.add_operation_of_player(1, build_tower1);
                // Apply player1's operation
@@ -176,27 +176,27 @@
                // Apply player0's operation
                s.apply_operations_of_player(0);
            }
-           
+
            // Add your operations here
            {
                const GameInfo& simulation_result = s.get_info();
                // ...  Make decision with simulated results
            }
-   
+
            c.send_self_operations(); // Send your operations to judger
            c.apply_self_operations(); // Apply your operations to game state
            c.read_round_info(); // Read round data from judger
        }
    }
    ```
-   
+
    按照我们刚刚说明的规则，这里构造 `Simulator` 实例并进行相应模拟的位置就很自然了。我们这样做的理由在于 `Simulator` 这个模块的设计动机，即通过模拟游戏后续的若干回合来引导当前回合的操作。在这里，我们从当前回合开始，模拟后续10回合，并根据模拟结果决定当前回合的操作。
-   
-   
-   
+
+
+
 3. 我们接下来详细介绍一下 后手的 `Simulator` 的使用流程，如果你从正确的位置开始模拟，则对于接下来的每个回合：
 
-   1. 添加后手的操作。调用 `add_operation_of_player(1， ... )` 将操作添加至后手操作列表（可以为空）。 
+   1. 添加后手的操作。调用 `add_operation_of_player(1， ... )` 将操作添加至后手操作列表（可以为空）。
    2. 应用后手的操作。调用 `apply_operations_of_player(1， ... )` 将后手操作列表中的所有操作应用到当前局面。
    3. 回合结算。调用 `next_round` 进行回合结算，该函数会返回游戏运行信息（正在运行或某方获胜）。
    4. 添加先手的操作。此时已进入下一回合， 调用 `add_operation_of_player(0， ... )` 将操作添加至先手操作列表（可以为空）。
@@ -204,7 +204,7 @@
 
    你会发现，这样的顺序可以视作你使用 `Simulator` 代替了游戏逻辑以正确的顺序进行了若干回合的游戏流程。
 
-   
+
 
 4. 类似地，我们给出先手的 `Simulator` 的使用流程，你需要格外注意它和刚才的代码顺序上的不同之处。
 
@@ -214,7 +214,7 @@
    {
        Operation build_tower0(OperationType::BuildTower, 5, 9);
        Operation build_tower1(OperationType::BuildTower, 13, 9);
-   
+
        // Add player0's operation
        s.add_operation_of_player(0, build_tower0);
        // Apply player0's operation
@@ -228,8 +228,8 @@
            break;
    }
    ```
-   
-   
+
+
 
 ## 4. 专注于决策！
 
@@ -241,7 +241,7 @@
    #include "template.hpp"
    ```
 
-   
+
 
 2. 接下来，我们来看看 `run_with_ai` 函数接受的参数。
 
@@ -254,7 +254,7 @@
 
    将写好的 AI 的函数作为参数传给 `run_with_ai()` 即可实现决策和游戏流程的组合，进而完成整个 AI 程序的开发。
 
-   
+
 
 3. 以下给出一个 AI 函数的示例。
 
@@ -263,7 +263,7 @@
    std::vector<Operation> simple_ai(int player_id, const GameInfo &game_info)
    {
        std::vector<Operation> ops; // Operations to be returned
-   
+
        if (player_id == 0) // Try building towers at (5, 9), (5, 3), (5, 15) for player 0
        {
            ops.emplace_back(BuildTower, 5, 9);
@@ -276,12 +276,12 @@
            ops.emplace_back(BuildTower, 13, 3);
            ops.emplace_back(BuildTower, 13, 15);
        }
-   
+
        return ops;
    }
    ```
 
-   这个最简单的 AI 函数始终尝试在固定位置建塔，对于双方分别尝试不同的建塔位置（它其实也利用了之前所述的“计划”机制来保证操作的合法性）。你可以在此基础上改进 AI 函数（比如使用 `Simulator` ，参考`example/template.cpp` 中的 `advanced_ai()`函数）以实现更加高级的策略。 
+   这个最简单的 AI 函数始终尝试在固定位置建塔，对于双方分别尝试不同的建塔位置（它其实也利用了之前所述的“计划”机制来保证操作的合法性）。你可以在此基础上改进 AI 函数（比如使用 `Simulator` ，参考`example/template.cpp` 中的 `advanced_ai()`函数）以实现更加高级的策略。
 
 
 
@@ -311,3 +311,12 @@
    ```
 
    将编译 `example/template.cpp` 并输出 `template` 可执行文件。
+
+## 维护与在线文档
+
+本仓库是 [saiblo/saiblo-antwar-sdk-cpp](https://github.com/saiblo/saiblo-antwar-sdk-cpp) 的 Fork，保留上游来源、目录约定及许可证。
+
+- [在线维护文档](https://xiaoshecode.github.io/xiaoshecode/repos/saiblo-antwar-sdk-cpp/)
+- [仓库维护说明](MAINTENANCE.md)：用途、环境、目录结构、检查结果和待验证事项。
+
+2026-10-30 的检查范围以维护说明为准；语法检查通过不代表完整构建、模型训练或硬件验证通过。
